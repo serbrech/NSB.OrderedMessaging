@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using NSB.OrderedProcessing.Exceptions;
 using NServiceBus.Logging;
@@ -10,24 +11,23 @@ namespace NSB.OrderedProcessing
     public class OrderedIncomingMessageBehavior : Behavior<IIncomingLogicalMessageContext>
     {
         static ILog _log = LogManager.GetLogger<OrderedIncomingMessageBehavior>();
-        private readonly HashSet<Type> _messageTypes;
+        private readonly Dictionary<Type, object> _messageTypeLocks;
 
         public OrderedIncomingMessageBehavior(OrderedProcessingConfig config)
         {
-            _messageTypes = new HashSet<Type>(config.MessageTypes);
-            foreach (var messageType in _messageTypes)
+            _messageTypeLocks = config.MessageTypes.ToDictionary(t => t, t => new object());
+            foreach (var messageType in _messageTypeLocks)
             {
-                State.Sequences.TryAdd(messageType, 0);
+                State.Sequences.TryAdd(messageType.Key, 0);
             }
         }
 
         //We'll need to persist this somewhere anyway as part of the tx.
         //means we'll need to let user provide an adapter.
         private static readonly OrderedProcessingState State = new OrderedProcessingState();
-
         public override Task Invoke(IIncomingLogicalMessageContext context, Func<Task> next)
         {
-            if (_messageTypes.Contains(context.Message.MessageType))
+            if (_messageTypeLocks.ContainsKey(context.Message.MessageType))
             {
                 long messageSequence;
                 if (!long.TryParse(context.Headers["NSB.OrderedProcessing.Sequence"], out messageSequence))
@@ -35,12 +35,21 @@ namespace NSB.OrderedProcessing
                     throw new OrderedMessagingSequenceMissingException(context.Message.MessageType);
                 }
 
-                //it's ok to not do it atomically, because if I'm the next message to be processed, then no other message can possibly increment the counter.
+                //It's ok to not do it atomically, because if I'm the next message to be processed, then no other message can possibly increment the counter.
                 ValidateSequenceNumber(messageSequence, context.Message.MessageType);
-                State.Sequences.AddOrUpdate(context.Message.MessageType, type => 1, (type, l) => messageSequence);
-
+                
+                //We need to lock on the processing of the message. but can seq+1 still get here before x?... I think yes...
+                //So I need to lock around the AddOrUpdate to be safe... and then we don't need the State.Sequence to be a concurrent dict.
+                lock (_messageTypeLocks[context.Message.MessageType])
+                {
+                    State.Sequences.AddOrUpdate(context.Message.MessageType, type => 1, (type, l) => messageSequence);
+                    return next();
+                }
             }
+
             return next();
+            
+
         }
 
         void ValidateSequenceNumber(long messageSequence, Type messageType)

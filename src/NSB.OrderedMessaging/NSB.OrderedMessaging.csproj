@@ -7,8 +7,8 @@
     <ProjectGuid>{71C99E91-9574-404F-99A0-9D03438B3A3C}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>NSB.OrderedProcessing</RootNamespace>
-    <AssemblyName>NSB.OrderedProcessing</AssemblyName>
+    <RootNamespace>NSB.OrderedMessaging</RootNamespace>
+    <AssemblyName>NSB.OrderedMessaging</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />

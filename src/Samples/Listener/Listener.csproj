@@ -56,7 +56,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\NSB.OrderedProcessing\NSB.OrderedProcessing.csproj">
+    <ProjectReference Include="..\..\NSB.OrderedMessaging\NSB.OrderedMessaging.csproj">
       <Project>{71c99e91-9574-404f-99a0-9d03438b3a3c}</Project>
       <Name>NSB.OrderedProcessing</Name>
     </ProjectReference>
