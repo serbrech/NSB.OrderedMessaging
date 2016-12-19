@@ -15,5 +15,5 @@ If the messages arrive out of order on the receiver, we throw an exception and s
 ```
 
 ##Is this useful?
-Not really... or well, if you have a single endpoint per queue, it might be. Don't expect it to work if you scale out.
+Maybe... well, if you have a single endpoint per queue, it might be. Don't expect it to work if you scale out.
 
